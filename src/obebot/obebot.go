@@ -10,6 +10,8 @@ import (
 	"math/rand"
 	"strconv"
 	"net/http"
+	"github.com/robfig/cron"
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -23,6 +25,7 @@ type Keys struct {
 	Slack string `json: "slack"`
 	Google string `json: "google"`
 	Cse string `json: "cse"`
+	Channel string `json: "channel"`
 }
 
 type Results struct {
@@ -30,6 +33,11 @@ type Results struct {
 		Link string `json: "link"`
 	}
 }
+
+var (
+	keys Keys
+	m Message
+)
 
 func getImage(q string, keys Keys) string {
 	var res Results
@@ -58,8 +66,15 @@ func getImage(q string, keys Keys) string {
 	return res.Items[randomLink].Link
 }
 
+func postRandImage(ws *websocket.Conn, ch string) {
+	//G0AM6NYU8 G3URW8HV2
+	m.Type = "message"
+	m.Channel = ch
+	m.Text = getImage("обед", keys)
+	postMessage(ws, m)
+}
+
 func main() {
-	var keys Keys
 	fmt.Println("Hello, I'm ObeBot!!")
 	bs, err := ioutil.ReadFile("prop.json")
 	if err != nil {
@@ -70,9 +85,14 @@ func main() {
 		log.Printf("Ошибка получения параметров из JSON %s", err)
 	}
 	ws, id := slackConnect(keys.Slack)
+
+	c := cron.New()
+	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() {postRandImage(ws, keys.Channel)})
+	c.Start()
+
 	rand.Seed(time.Now().UTC().UnixNano())
 	for {
-		m, err := getMessage(ws)
+		m, err = getMessage(ws)
 		if err != nil {
 			log.Fatalf("Ошибка получения сообщения %s", err)
 		}
@@ -80,6 +100,7 @@ func main() {
 		// Смотрим только личные сообщения нашему Обеботу
 		if m.Type == "message" && strings.HasPrefix(m.Text, "<@"+id+">") {
 			go func(m Message) {
+				// Преобразуем сообщение в поисковую строку, получим по запросу ссылку на картинку и запостим
 				qs := strings.Join(strings.Fields(m.Text)[1:], "%20")
 				link := getImage(qs, keys)
 				m.Text = link

@@ -32,6 +32,7 @@ var counter uint64
 
 func postMessage(ws *websocket.Conn, m Message) error {
 	m.Id = atomic.AddUint64(&counter, 1)
+	log.Println(m)
 	return websocket.WriteJSON(ws, m)
 }
 

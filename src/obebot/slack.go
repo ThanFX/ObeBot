@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"log"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"sync/atomic"
 )
 
@@ -41,7 +41,7 @@ func getMessage(ws *websocket.Conn) (m Message, err error) {
 	return
 }
 
-func slackStart(token string) (wsurl, id string, err error)  {
+func slackStart(token string) (wsurl, id string, err error) {
 	var respObj responseRtmStart
 	url := fmt.Sprint(SLACK_CONNECT_URL + token)
 	resp, err := http.Get(url)
@@ -68,7 +68,7 @@ func slackStart(token string) (wsurl, id string, err error)  {
 	return
 }
 
-func slackConnect(token string) (*websocket.Conn, string)  {
+func slackConnect(token string) (*websocket.Conn, string) {
 	wsurl, id, err := slackStart(token)
 	if err != nil {
 		log.Fatalf("Ошибка соединения со Slack %s", err)

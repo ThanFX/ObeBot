@@ -5,38 +5,39 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
+	"net/http"
+	"strconv"
 	"strings"
 	"time"
-	"math/rand"
-	"strconv"
-	"net/http"
-	"github.com/robfig/cron"
+
 	"github.com/gorilla/websocket"
+	"github.com/robfig/cron"
 )
 
 const (
-	SLACK_CONNECT_URL string = "https://slack.com/api/rtm.start?token="
-	GOOGLE_SEARCH_URL string = "https://www.googleapis.com/customsearch/v1?"
-	GOOGLE_SEARCH_ATTR string = "&searchType=image&as_filetype=png&as_filetype=jpg&fields=items(link)"
-	GOOGLE_SEARCH_MAX_PAGES int = 90
+	SLACK_CONNECT_URL       string = "https://slack.com/api/rtm.start?token="
+	GOOGLE_SEARCH_URL       string = "https://www.googleapis.com/customsearch/v1?"
+	GOOGLE_SEARCH_ATTR      string = "&searchType=image&as_filetype=png&as_filetype=jpg&fields=items(link)"
+	GOOGLE_SEARCH_MAX_PAGES int    = 90
 )
 
 type Keys struct {
-	Slack string `json: "slack"`
-	Google string `json: "google"`
-	Cse string `json: "cse"`
+	Slack   string `json: "slack"`
+	Google  string `json: "google"`
+	Cse     string `json: "cse"`
 	Channel string `json: "channel"`
 }
 
 type Results struct {
-	Items []struct{
+	Items []struct {
 		Link string `json: "link"`
 	}
 }
 
 var (
 	keys Keys
-	m Message
+	m    Message
 )
 
 func getImage(q string, keys Keys) string {
@@ -52,7 +53,7 @@ func getImage(q string, keys Keys) string {
 		log.Fatalf("Ошибка запроса CSE: %s", err)
 	}
 	if resp.StatusCode != 200 {
-		log.Fatalf("Ошибка CSE: %d", resp.StatusCode)
+		return "А вот " + strconv.Itoa(resp.StatusCode) + " тебе!"
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -62,6 +63,9 @@ func getImage(q string, keys Keys) string {
 	err = json.Unmarshal(body, &res)
 	if err != nil {
 		log.Fatalf("Ошибка парсинга ответа от CSE: %s", err)
+	}
+	if len(res.Items) < 10 {
+		return "Умерь свою буйную фантазию!"
 	}
 	return res.Items[randomLink].Link
 }
@@ -80,6 +84,7 @@ func main() {
 	if err != nil {
 		log.Printf("Ошибка открытия файла параметров %s", err)
 	}
+	//log.Println(string(bs))
 	err = json.Unmarshal(bs, &keys)
 	if err != nil {
 		log.Printf("Ошибка получения параметров из JSON %s", err)
@@ -87,7 +92,7 @@ func main() {
 	ws, id := slackConnect(keys.Slack)
 
 	c := cron.New()
-	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() {postRandImage(ws, keys.Channel)})
+	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
 	c.Start()
 
 	rand.Seed(time.Now().UTC().UnixNano())

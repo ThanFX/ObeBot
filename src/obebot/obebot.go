@@ -44,25 +44,24 @@ func getImage(q string, keys Keys) string {
 	var res Results
 	randomStart := strconv.Itoa(rand.Intn(GOOGLE_SEARCH_MAX_PAGES))
 	randomLink := rand.Intn(10)
-
 	url := GOOGLE_SEARCH_URL + "key=" + keys.Google + "&cx=" + keys.Cse + "&q=" + q + GOOGLE_SEARCH_ATTR +
 		"&start=" + randomStart + "&num=10"
-	//log.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalf("Ошибка запроса CSE: %s", err)
+		log.Printf("Ошибка запроса CSE: %s", err)
+		return "Что-то ты не то ищещь, даже гугл не хочет тебе отвечать"
 	}
 	if resp.StatusCode != 200 {
 		return "А вот " + strconv.Itoa(resp.StatusCode) + " тебе!"
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal("Ошибка парсинга тела ответа от CSE: %s", err)
+		log.Printf("Ошибка парсинга тела ответа от CSE: %s", err)
 	}
 	defer resp.Body.Close()
 	err = json.Unmarshal(body, &res)
 	if err != nil {
-		log.Fatalf("Ошибка парсинга ответа от CSE: %s", err)
+		log.Printf("Ошибка парсинга ответа от CSE: %s", err)
 	}
 	if len(res.Items) < 10 {
 		return "Умерь свою буйную фантазию!"
@@ -82,12 +81,11 @@ func main() {
 	fmt.Println("Hello, I'm ObeBot!!")
 	bs, err := ioutil.ReadFile("prop.json")
 	if err != nil {
-		log.Printf("Ошибка открытия файла параметров %s", err)
+		log.Fatalf("Ошибка открытия файла параметров %s", err)
 	}
-	//log.Println(string(bs))
 	err = json.Unmarshal(bs, &keys)
 	if err != nil {
-		log.Printf("Ошибка получения параметров из JSON %s", err)
+		log.Fatalf("Ошибка получения параметров из JSON %s", err)
 	}
 	ws, id := slackConnect(keys.Slack)
 
@@ -99,7 +97,7 @@ func main() {
 	for {
 		m, err = getMessage(ws)
 		if err != nil {
-			log.Fatalf("Ошибка получения сообщения %s", err)
+			log.Printf("Ошибка получения сообщения %s", err)
 		}
 		//log.Printf("Id: %d, Type: %s, Channel: %s, Text: %s", m.Id, m.Type, m.Channel, m.Text)
 		// Смотрим только личные сообщения нашему Обеботу

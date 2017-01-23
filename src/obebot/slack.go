@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"sync/atomic"
+
+	"github.com/gorilla/websocket"
 )
 
 type responseSelf struct {
@@ -37,7 +38,8 @@ func postMessage(ws *websocket.Conn, m Message) error {
 }
 
 func getMessage(ws *websocket.Conn) (m Message, err error) {
-	err = websocket.ReadJSON(ws, &m)
+	_, s, err := ws.ReadMessage()
+	err = json.Unmarshal(s, &m)
 	return
 }
 

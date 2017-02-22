@@ -40,12 +40,13 @@ var (
 	m    Message
 )
 
-func getImage(q string, keys Keys) string {
+func getImage(q string, keys Keys, max int) string {
 	var res Results
-	randomStart := strconv.Itoa(rand.Intn(GOOGLE_SEARCH_MAX_PAGES))
+	randomStart := strconv.Itoa(rand.Intn(max) + 1)
 	randomLink := rand.Intn(10)
 	url := GOOGLE_SEARCH_URL + "key=" + keys.Google + "&cx=" + keys.Cse + "&q=" + q + GOOGLE_SEARCH_ATTR +
 		"&start=" + randomStart + "&num=10"
+	log.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("Ошибка запроса CSE: %s", err)
@@ -73,7 +74,7 @@ func postRandImage(ws *websocket.Conn, ch string) {
 	//G0AM6NYU8 G3URW8HV2
 	m.Type = "message"
 	m.Channel = ch
-	m.Text = getImage("обед", keys)
+	m.Text = getImage("обед", keys, GOOGLE_SEARCH_MAX_PAGES)
 	postMessage(ws, m)
 }
 
@@ -90,7 +91,7 @@ func main() {
 	ws, id := slackConnect(keys.Slack)
 
 	c := cron.New()
-	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
+	c.AddFunc("0 0-30/5 11 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
 	c.Start()
 
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -103,9 +104,16 @@ func main() {
 		// Смотрим только личные сообщения нашему Обеботу
 		if m.Type == "message" && strings.HasPrefix(m.Text, "<@"+id+">") {
 			go func(m Message) {
+				// Чем больше слов в запросе, тем меньший размер выборки (для повышения релевантности)
+				length := 10 - len(strings.Fields(m.Text))
+				if length < 1 {
+					length = 1
+				}
+				//log.Println(length)
+				//log.Println(math.Max(0, 5-length))
 				// Преобразуем сообщение в поисковую строку, получим по запросу ссылку на картинку и запостим
 				qs := strings.Join(strings.Fields(m.Text)[1:], "%20")
-				link := getImage(qs, keys)
+				link := getImage(qs, keys, length)
 				m.Text = link
 				postMessage(ws, m)
 			}(m)

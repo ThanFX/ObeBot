@@ -1,3 +1,5 @@
 .idea
 obebot.exe*
 /src/obebot/prop.json
+src/obebot/obebot
+!src/obebot/obebot.go

@@ -6,20 +6,20 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/robfig/cron"
 )
 
 const (
 	SLACK_CONNECT_URL       string = "https://slack.com/api/rtm.start?token="
+	SLACK_GET_USER_INFO_URL string = "https://slack.com/api/users.info?token="
 	GOOGLE_SEARCH_URL       string = "https://www.googleapis.com/customsearch/v1?"
 	GOOGLE_SEARCH_ATTR      string = "&searchType=image&as_filetype=png&as_filetype=jpg&fields=items(link)"
 	GOOGLE_SEARCH_MAX_PAGES int    = 90
+	FILE_QUIZ_NAME          string = "quiz.txt"
+	FILE_QUIZ_RESULT_NAME   string = "quiz_result.txt"
 )
 
 type Keys struct {
@@ -38,47 +38,14 @@ type Results struct {
 var (
 	keys Keys
 	m    Message
+	q    Question
 )
 
-func getImage(q string, keys Keys, max int) string {
-	var res Results
-	randomStart := strconv.Itoa(rand.Intn(max) + 1)
-	randomLink := rand.Intn(10)
-	url := GOOGLE_SEARCH_URL + "key=" + keys.Google + "&cx=" + keys.Cse + "&q=" + q + GOOGLE_SEARCH_ATTR +
-		"&start=" + randomStart + "&num=10"
-	log.Println(url)
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Printf("Ошибка запроса CSE: %s", err)
-		return "Что-то ты не то ищещь, даже гугл не хочет тебе отвечать"
-	}
-	if resp.StatusCode != 200 {
-		return "А вот " + strconv.Itoa(resp.StatusCode) + " тебе!"
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Ошибка парсинга тела ответа от CSE: %s", err)
-	}
-	defer resp.Body.Close()
-	err = json.Unmarshal(body, &res)
-	if err != nil {
-		log.Printf("Ошибка парсинга ответа от CSE: %s", err)
-	}
-	if len(res.Items) < 10 {
-		return "Умерь свою буйную фантазию!"
-	}
-	return res.Items[randomLink].Link
-}
-
-func postRandImage(ws *websocket.Conn, ch string) {
-	//G0AM6NYU8 G3URW8HV2
-	m.Type = "message"
-	m.Channel = ch
-	m.Text = getImage("обед", keys, GOOGLE_SEARCH_MAX_PAGES)
-	postMessage(ws, m)
-}
-
 func main() {
+	var (
+		isQuestion = false
+		isQuiz     = false
+	)
 	fmt.Println("Hello, I'm ObeBot!!")
 	bs, err := ioutil.ReadFile("prop.json")
 	if err != nil {
@@ -89,6 +56,7 @@ func main() {
 		log.Fatalf("Ошибка получения параметров из JSON %s", err)
 	}
 	ws, id := slackConnect(keys.Slack)
+	isQuiz = initQuiz()
 
 	c := cron.New()
 	c.AddFunc("0 0-30/5 11 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
@@ -100,22 +68,54 @@ func main() {
 		if err != nil {
 			log.Printf("Ошибка получения сообщения %s", err)
 		}
-		//log.Printf("Id: %d, Type: %s, Channel: %s, Text: %s", m.Id, m.Type, m.Channel, m.Text)
-		// Смотрим только личные сообщения нашему Обеботу
-		if m.Type == "message" && strings.HasPrefix(m.Text, "<@"+id+">") {
+		/*
+			log.Printf("Id: %d, Type: %s, Channel: %s, User: %s, Text: %s, Time: %s",
+				m.Id, m.Type, m.Channel, m.User, m.Text, m.Ts)
+			if m.User != "" {
+				log.Println(getUserInfo(keys.Slack, m.User))
+			}
+		*/
+		// Парсим сообщение
+		if m.Type == "message" {
 			go func(m Message) {
-				// Чем больше слов в запросе, тем меньший размер выборки (для повышения релевантности)
-				length := 10 - len(strings.Fields(m.Text))
-				if length < 1 {
-					length = 1
+				if m.Text == "" {
+					return
 				}
-				//log.Println(length)
-				//log.Println(math.Max(0, 5-length))
-				// Преобразуем сообщение в поисковую строку, получим по запросу ссылку на картинку и запостим
-				qs := strings.Join(strings.Fields(m.Text)[1:], "%20")
-				link := getImage(qs, keys, length)
-				m.Text = link
-				postMessage(ws, m)
+				text := strings.Fields(m.Text)
+				// Если боту в личку - смотрим первое слово самого сообщения
+				log.Println(text)
+				if text[0] == "<@"+id+">" {
+					switch text[1] {
+					// Если запрос на квиз - уходим туда
+					case "!quiz":
+						// Если викторина не запущена - нафиг
+						if !isQuiz {
+							m.Text = "Какая, нафиг, викторина? Работать, блеать!"
+							postMessage(ws, m)
+						} else {
+							// Уходим постить вопрос (новый или повторять уже заданный)
+							isQuestion = postQuiz(ws, m, isQuestion)
+						}
+					// Если запрос результатов квиза - уходим в результаты
+					case "!result":
+						// Если викторина не запущена - нафиг
+						if !isQuiz {
+							m.Text = "Какие, нафиг, результаты викторины? Работать, блеать!"
+							postMessage(ws, m)
+						} else {
+							// Уходим постить результаты викторины
+							postQuizResult(ws, m)
+						}
+					// Иначе это просто запрос на картинки
+					default:
+						postImage(ws, m, text[1:])
+					}
+				} else {
+					// Иначе смотрим, запущен ли квиз и загадан ли вопрос
+					if isQuiz && isQuestion {
+						isQuestion = checkAnswer(ws, m)
+					}
+				}
 			}(m)
 		}
 	}

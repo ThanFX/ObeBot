@@ -22,18 +22,31 @@ type responseRtmStart struct {
 	Self  responseSelf `json:"self"`
 }
 
+type User struct {
+	Name     string `json:"name"`
+	RealName string `json:"real_name"`
+}
+
+type responseUser struct {
+	Ok    bool   `json:"ok"`
+	Error string `json:"error"`
+	User  User   `json: "user"`
+}
+
 type Message struct {
 	Id      uint64 `json:"id"`
 	Type    string `json:"type"`
 	Channel string `json:"channel"`
+	User    string `json:"user"`
 	Text    string `json:"text"`
+	Ts      string `json:"ts"`
 }
 
 var counter uint64
 
 func postMessage(ws *websocket.Conn, m Message) error {
 	m.Id = atomic.AddUint64(&counter, 1)
-	log.Println(m)
+	fmt.Println(m)
 	return websocket.WriteJSON(ws, m)
 }
 
@@ -41,6 +54,31 @@ func getMessage(ws *websocket.Conn) (m Message, err error) {
 	_, s, err := ws.ReadMessage()
 	err = json.Unmarshal(s, &m)
 	return
+}
+
+func getUserInfo(token, user string) (string, string) {
+	var respObj responseUser
+	url := SLACK_GET_USER_INFO_URL + token + "&user=" + user
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("Ошибка получения пользователя %s: %s", user, err)
+	}
+	if resp.StatusCode != 200 {
+		log.Printf("Ошибка запроса %d при получении пользователя %s", resp.StatusCode, user)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Ошибка получения тела ответа при получении пользователя %s: %s", user, err)
+	}
+	resp.Body.Close()
+	err = json.Unmarshal(body, &respObj)
+	if err != nil {
+		log.Printf("Ошибка парсинга тела ответа от Slack при получении пользователя %s: %s", user, err)
+	}
+	if !respObj.Ok {
+		log.Printf("Ошибка Slack при получении пользователя %s: %s", user, respObj.Error)
+	}
+	return respObj.User.Name, respObj.User.RealName
 }
 
 func slackStart(token string) (wsurl, id string, err error) {

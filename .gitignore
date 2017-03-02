@@ -1,4 +1,7 @@
 .idea
 prop.json
-obebot*
+ObeBot*
 !obebot.go
+quiz_result.txt
+quiz1.txt
+

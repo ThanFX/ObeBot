@@ -33,6 +33,17 @@ type responseUser struct {
 	User  User   `json: "user"`
 }
 
+type Channel struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type responseChannel struct {
+	Ok           bool   `json:"ok"`
+	Error        string `json:"error"`
+	ChannelsList []Channel
+}
+
 type Message struct {
 	Id      uint64 `json:"id"`
 	Type    string `json:"type"`
@@ -79,6 +90,34 @@ func getUserInfo(token, user string) (string, string) {
 		log.Printf("Ошибка Slack при получении пользователя %s: %s", user, respObj.Error)
 	}
 	return respObj.User.Name, respObj.User.RealName
+}
+
+func getChannelsList(token string) []Channel {
+	var respObj responseChannel
+	url := SLACK_GET_CHANNELS_LIST_URL + token
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("Ошибка получения списка каналов: %s", err)
+	}
+	if resp.StatusCode != 200 {
+		log.Printf("Ошибка запроса %d при получении списка каналов: %s", resp.StatusCode, err)
+	}
+	log.Println(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Ошибка получения тела ответа при получении списка каналов: %s", err)
+	}
+	resp.Body.Close()
+	err = json.Unmarshal(body, &respObj)
+	if err != nil {
+		log.Printf("Ошибка парсинга тела ответа от Slack при получении списка каналов: %s", err)
+	}
+	if !respObj.Ok {
+		log.Printf("Ошибка Slack при получении списка каналов: %s", respObj.Error)
+	}
+	//log.Println(respObj)
+	return respObj.ChannelsList
 }
 
 func slackStart(token string) (wsurl, id string, err error) {

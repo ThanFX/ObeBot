@@ -13,13 +13,14 @@ import (
 )
 
 const (
-	SLACK_CONNECT_URL       string = "https://slack.com/api/rtm.start?token="
-	SLACK_GET_USER_INFO_URL string = "https://slack.com/api/users.info?token="
-	GOOGLE_SEARCH_URL       string = "https://www.googleapis.com/customsearch/v1?"
-	GOOGLE_SEARCH_ATTR      string = "&searchType=image&as_filetype=png&as_filetype=jpg&fields=items(link)"
-	GOOGLE_SEARCH_MAX_PAGES int    = 90
-	FILE_QUIZ_NAME          string = "quiz.txt"
-	FILE_QUIZ_RESULT_NAME   string = "quiz_result.txt"
+	SLACK_CONNECT_URL           string = "https://slack.com/api/rtm.start?token="
+	SLACK_GET_USER_INFO_URL     string = "https://slack.com/api/users.info?token="
+	SLACK_GET_CHANNELS_LIST_URL string = "https://slack.com/api/channels.list?token="
+	GOOGLE_SEARCH_URL           string = "https://www.googleapis.com/customsearch/v1?"
+	GOOGLE_SEARCH_ATTR          string = "&searchType=image&as_filetype=png&as_filetype=jpg&fields=items(link)"
+	GOOGLE_SEARCH_MAX_PAGES     int    = 90
+	FILE_QUIZ_NAME              string = "quiz.txt"
+	FILE_QUIZ_RESULT_NAME       string = "quiz_result.txt"
 )
 
 type Keys struct {
@@ -59,7 +60,7 @@ func main() {
 	isQuiz = initQuiz()
 
 	c := cron.New()
-	c.AddFunc("0 0-30/5 11 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
+	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
 	c.Start()
 
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -106,6 +107,14 @@ func main() {
 							// Уходим постить результаты викторины
 							postQuizResult(ws, m)
 						}
+					// Если запрос следующего вопроса - пропускаем текущий
+					case "!next":
+						if isQuestion {
+							isQuestion = postQuiz(ws, m, false)
+						}
+					// Если запрос на добавление вопроса
+					case "!add":
+						log.Println(getChannelsList(keys.Slack))
 					// Иначе это просто запрос на картинки
 					default:
 						postImage(ws, m, text[1:])

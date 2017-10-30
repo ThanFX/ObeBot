@@ -19,6 +19,7 @@ const (
 	GOOGLE_SEARCH_URL           string = "https://www.googleapis.com/customsearch/v1?"
 	GOOGLE_SEARCH_ATTR          string = "&searchType=image&as_filetype=png&as_filetype=jpg&fields=items(link)"
 	GOOGLE_SEARCH_MAX_PAGES     int    = 90
+	WIKI_SEARCH_URL             string = "https://ru.wikipedia.org/w/api.php?action=opensearch&prop=info&format=json&inprop=url"
 	FILE_QUIZ_NAME              string = "quiz.txt"
 	FILE_QUIZ_RESULT_NAME       string = "quiz_result.txt"
 )
@@ -34,6 +35,13 @@ type Results struct {
 	Items []struct {
 		Link string `json: "link"`
 	}
+}
+
+type WikiRes struct {
+	SearchText    string
+	ResultStrings []string
+	ResultDesc    []string
+	ResultURL     []string
 }
 
 var (
@@ -115,6 +123,9 @@ func main() {
 					// Если запрос на добавление вопроса
 					case "!add":
 						log.Println(getChannelsList(keys.Slack))
+					// Если запрос на Вики - уходим искать там
+					case "!wiki":
+						postWiki(ws, m, text[2:])
 					// Иначе это просто запрос на картинки
 					default:
 						postImage(ws, m, text[1:])

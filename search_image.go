@@ -35,7 +35,7 @@ func getImage(q string, keys Keys, max int) string {
 	if err != nil {
 		log.Printf("Ошибка парсинга ответа от CSE: %s", err)
 	}
-	if len(res.Items) < 10 {
+	if len(res.Items) < 3 {
 		return "Умерь свою буйную фантазию!"
 	}
 	return res.Items[randomLink].Link

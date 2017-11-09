@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,7 +13,7 @@ import (
 )
 
 func getWiki(s string) string {
-	var res [][]string
+	var res []string
 	url := WIKI_SEARCH_URL + "&search=" + s
 	log.Println(url)
 	resp, err := http.Get(url)
@@ -28,11 +29,19 @@ func getWiki(s string) string {
 		log.Printf("Ошибка парсинга тела ответа от Wiki: %s", err)
 	}
 	defer resp.Body.Close()
-	err = json.Unmarshal(body, &res)
-	//	if err != nil {
-	//		log.Printf("Ошибка парсинга ответа от Wiki: %s", err)
-	//	}
-	return string(res[3][0])
+	bodyStr := string(body)
+	answers := strings.Split(bodyStr[1:len(bodyStr)-1], "],")
+	log.Println(answers[2])
+	err = json.Unmarshal([]byte(answers[2]), &res)
+	log.Println(res)
+	if err != nil {
+		log.Printf("Ошибка парсинга ответа от Wiki: %s", err)
+	}
+	if len(res) == 0 {
+		return "Ты запрашиваешь настолько неведомую дичь, что даже Вика не в курсе"
+	}
+	randomLink := rand.Intn(len(res))
+	return res[randomLink]
 }
 
 func postWiki(ws *websocket.Conn, m Message, text []string) {

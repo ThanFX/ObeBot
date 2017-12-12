@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/robfig/cron"
+	"database/sql"
 )
 
 const (
@@ -61,6 +62,7 @@ var (
 	keys Keys
 	m    Message
 	q    Question
+	db *sql.DB
 )
 
 func main() {
@@ -79,6 +81,12 @@ func main() {
 	}
 	ws, id := slackConnect(keys.Slack)
 	isQuiz = initQuiz()
+
+	db, err = sql.Open("sqlite3", "redbust.db")
+	if err != nil {
+		log.Printf("Ошибка открытия файла БД: %s", err)
+	}
+	defer db.Close()
 
 	c := cron.New()
 	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })

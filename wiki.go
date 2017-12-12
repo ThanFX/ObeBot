@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,8 +39,8 @@ func getWiki(s string) string {
 	if len(res) == 0 {
 		return "Ты запрашиваешь настолько неведомую дичь, что даже Вика не в курсе"
 	}
-	randomLink := rand.Intn(len(res))
-	return res[randomLink]
+	//randomLink := rand.Intn(len(res))
+	return res[0]
 }
 
 func postWiki(ws *websocket.Conn, m Message, text []string) {

@@ -5,3 +5,6 @@ ObeBot*
 quiz_result.txt
 quiz1.txt
 
+/.env
+.env
+vendor/

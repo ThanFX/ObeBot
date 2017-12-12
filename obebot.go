@@ -19,8 +19,14 @@ const (
 	GOOGLE_SEARCH_URL           string = "https://www.googleapis.com/customsearch/v1?"
 	GOOGLE_SEARCH_ATTR          string = "&searchType=image&as_filetype=png&as_filetype=jpg&fields=items(link)"
 	GOOGLE_SEARCH_MAX_PAGES     int    = 90
+	WIKI_SEARCH_URL             string = "https://ru.wikipedia.org/w/api.php?action=opensearch&prop=info&format=json&inprop=url"
+	BOOBS_SEARCH_URL            string = "http://api.oboobs.ru/boobs/"
+	BOOBS_MAX_SIZE              int    = 11240
+	BUTTS_SEARCH_URL            string = "http://api.obutts.ru/butts/"
+	BUTTS_MAX_SIZE              int    = 5230
 	FILE_QUIZ_NAME              string = "quiz.txt"
 	FILE_QUIZ_RESULT_NAME       string = "quiz_result.txt"
+	BB_CHANNEL                  string = "G7XBF35TM"
 )
 
 type Keys struct {
@@ -34,6 +40,21 @@ type Results struct {
 	Items []struct {
 		Link string `json: "link"`
 	}
+}
+
+type WikiRes struct {
+	SearchText    string
+	ResultStrings []string
+	ResultDesc    []string
+	ResultURL     []string
+}
+
+type BBRes struct {
+	Model   string
+	Preview string
+	Id      int
+	Rank    int
+	Author  string
 }
 
 var (
@@ -66,9 +87,15 @@ func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 	for {
 		m, err = getMessage(ws)
-		if err != nil {
-			log.Printf("Ошибка получения сообщения %s", err)
+		if r := recover(); r != nil {
+			log.Printf("Упавшее соединение поднято!!!")
+			ws, id = slackConnect(keys.Slack)
 		}
+		/*
+			if err != nil {
+				log.Printf("Ошибка получения сообщения %s", err)
+			}
+		*/
 		/*
 			log.Printf("Id: %d, Type: %s, Channel: %s, User: %s, Text: %s, Time: %s",
 				m.Id, m.Type, m.Channel, m.User, m.Text, m.Ts)
@@ -115,13 +142,25 @@ func main() {
 					// Если запрос на добавление вопроса
 					case "!add":
 						log.Println(getChannelsList(keys.Slack))
+					// Если запрос на Вики - уходим искать там
+					case "!wiki":
+						postWiki(ws, m, text[2:])
 					// Иначе это просто запрос на картинки
+					case "!red":
+						if m.Channel == BB_CHANNEL {
+							postRedImage(ws, m, text[2:])
+						}
 					default:
 						postImage(ws, m, text[1:])
 					}
 				} else {
-					// Иначе смотрим, запущен ли квиз и загадан ли вопрос
-					if isQuiz && isQuestion {
+					// Если это канал b&b - парсим сообщение
+					if m.Channel == BB_CHANNEL {
+						if strings.HasPrefix(m.Text, "!") {
+							postBB(ws, m)
+						}
+					} else if isQuiz && isQuestion {
+						// Иначе смотрим, запущен ли квиз и загадан ли вопрос
 						isQuestion = checkAnswer(ws, m)
 					}
 				}

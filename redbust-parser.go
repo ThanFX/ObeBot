@@ -20,9 +20,9 @@ type Photos struct {
 	PostUrl  string
 }
 
-var baseUrl string = "http://redbust.com/page/"
-var startPage int = 1
-var finishPage int = 492
+var baseUrl = "http://redbust.com/page/"
+var startPage = 1
+var finishPage = 492
 var db *sql.DB
 
 func savePost(post Photos) {
@@ -115,7 +115,7 @@ func createDB() error {
 	return nil
 }
 
-func main() {
+func startParsing() {
 	err := createDB()
 	if err != nil {
 		log.Println("БД создана!")

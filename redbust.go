@@ -1,9 +1,10 @@
 package main
 
 import (
-	"strings"
-	"github.com/gorilla/websocket"
 	"log"
+	"strings"
+
+	"github.com/gorilla/websocket"
 
 	"math/rand"
 )
@@ -51,16 +52,18 @@ func getRandImage(postId int) string {
 
 func getImageUrlByTag(tag string) string {
 	log.Println("Ищем по запросу " + tag)
-	max, err := db.Query("select count(post_id) from tags where tag like ?", strings.ToLower(tag))
+	max, err := db.Query("select count(post_id) from tags where tag like ?", strings.ToLower("%"+tag+"%"))
 	if err != nil {
 		log.Fatalf("Ошибка поиска количества постов по тегу в БД: %s", err)
 	}
+
 	defer max.Close()
 
-	rows, err := db.Query("select post_id from tags where tag like ?", strings.ToLower(tag))
+	rows, err := db.Query("select post_id from tags where tag like ?", strings.ToLower("%"+tag+"%"))
 	if err != nil {
 		log.Fatalf("Ошибка поиска id постов по тегу в БД: %s", err)
 	}
+
 	defer max.Close()
 
 	var maxCount, randPostNum int
@@ -75,7 +78,7 @@ func getImageUrlByTag(tag string) string {
 		randPostNum = rand.Intn(maxCount)
 	}
 	i := 0
-		var id int
+	var id int
 	for rows.Next() {
 		err = rows.Scan(&id)
 		if err != nil {

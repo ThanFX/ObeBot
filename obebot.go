@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robfig/cron"
 	"database/sql"
+
+	"github.com/robfig/cron"
 )
 
 const (
@@ -62,7 +63,7 @@ var (
 	keys Keys
 	m    Message
 	q    Question
-	db *sql.DB
+	db   *sql.DB
 )
 
 func main() {
@@ -154,7 +155,7 @@ func main() {
 					case "!wiki":
 						postWiki(ws, m, text[2:])
 					// Иначе это просто запрос на картинки
-					case "!red":
+					case "!tag":
 						if m.Channel == BB_CHANNEL {
 							postRedImage(ws, m, text[2:])
 						}

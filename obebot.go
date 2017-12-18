@@ -90,7 +90,7 @@ func main() {
 	defer db.Close()
 
 	c := cron.New()
-	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
+	c.AddFunc("0 0-30/5 6 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
 	c.Start()
 
 	rand.Seed(time.Now().UTC().UnixNano())

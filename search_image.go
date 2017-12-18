@@ -15,7 +15,6 @@ import (
 func getImage(q string, keys Keys, max int) string {
 	var res Results
 	randomStart := strconv.Itoa(rand.Intn(max) + 1)
-	randomLink := rand.Intn(10)
 	url := GOOGLE_SEARCH_URL + "key=" + keys.Google + "&cx=" + keys.Cse + "&q=" + q + GOOGLE_SEARCH_ATTR +
 		"&start=" + randomStart + "&num=10"
 	resp, err := http.Get(url)
@@ -38,6 +37,7 @@ func getImage(q string, keys Keys, max int) string {
 	if len(res.Items) < 3 {
 		return "Умерь свою буйную фантазию!"
 	}
+	randomLink := rand.Intn(len(res.Items))
 	return res.Items[randomLink].Link
 }
 

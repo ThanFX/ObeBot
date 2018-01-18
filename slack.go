@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -62,6 +63,13 @@ func postMessage(ws *websocket.Conn, m Message) error {
 }
 
 func getMessage(ws *websocket.Conn) (m Message, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Паника, паника!!!")
+			err = errors.New("PANIC!")
+			return
+		}
+	}()
 	_, s, err := ws.ReadMessage()
 	err = json.Unmarshal(s, &m)
 	return

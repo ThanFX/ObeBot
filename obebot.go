@@ -96,9 +96,12 @@ func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 	for {
 		m, err = getMessage(ws)
-		if r := recover(); r != nil {
-			log.Printf("Упавшее соединение поднято!!!")
+		if err != nil && err.Error() == "PANIC!" {
+			log.Printf("Произошла паника, перезапускаемся")
 			ws, id = slackConnect(keys.Slack)
+			m.Channel = BB_CHANNEL
+			m.Text = "Паника отловлена и обезврежена, сиськи спасены!"
+			postMessage(ws, m)
 		}
 		/*
 			if err != nil {

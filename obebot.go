@@ -32,10 +32,11 @@ const (
 )
 
 type Keys struct {
-	Slack   string `json: "slack"`
-	Google  string `json: "google"`
-	Cse     string `json: "cse"`
-	Channel string `json: "channel"`
+	Slack      string `json: "slack"`
+	Google     string `json: "google"`
+	Cse        string `json: "cse"`
+	Channel    string `json: "channel"`
+	DialogFlow string `json: "dialogflow"`
 }
 
 type Results struct {
@@ -127,7 +128,7 @@ func main() {
 				if text[0] == "<@"+id+">" {
 					switch text[1] {
 					// Если запрос на квиз - уходим туда
-					case "!quiz":
+					case "-quiz":
 						// Если викторина не запущена - нафиг
 						if !isQuiz {
 							m.Text = "Какая, нафиг, викторина? Работать, блеать!"
@@ -137,7 +138,7 @@ func main() {
 							isQuestion = postQuiz(ws, m, isQuestion)
 						}
 					// Если запрос результатов квиза - уходим в результаты
-					case "!result":
+					case "-result":
 						// Если викторина не запущена - нафиг
 						if !isQuiz {
 							m.Text = "Какие, нафиг, результаты викторины? Работать, блеать!"
@@ -147,23 +148,24 @@ func main() {
 							postQuizResult(ws, m)
 						}
 					// Если запрос следующего вопроса - пропускаем текущий
-					case "!next":
+					case "-next":
 						if isQuestion {
 							isQuestion = postQuiz(ws, m, false)
 						}
-					// Если запрос на добавление вопроса
-					case "!add":
-						log.Println(getChannelsList(keys.Slack))
 					// Если запрос на Вики - уходим искать там
-					case "!wiki":
+					case "-wiki":
 						postWiki(ws, m, text[2:])
-					// Иначе это просто запрос на картинки
-					case "!tag":
+					// Запрос эротической картинки по тэгу
+					case "-tag":
 						if m.Channel == BB_CHANNEL {
 							postRedImage(ws, m, text[2:])
 						}
-					default:
+					// Поиск картинки по запросу
+					case "-img":
 						postImage(ws, m, text[1:])
+					// Иначе просто диалог с ботом
+					default:
+						PostDialogMessage(ws, m, text[1:])
 					}
 				} else {
 					// Если это канал b&b - парсим сообщение

@@ -23,7 +23,8 @@ func getDialogAnswer(input string) string {
 	//log.Printf("Запрос к диалогботу: %s", query)
 	resp, err := dfc.QueryFindRequest(query)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%#v", query)
+		return "Кажется, нужно помочь мне определиться с ответом. Демиург мой, взываю о помощи!"
 	}
 	//fmt.Printf("%s", resp.Result.Fulfillment.Messages)
 	if resp.Result.Fulfillment.Speech == "" {

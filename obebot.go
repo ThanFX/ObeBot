@@ -125,7 +125,7 @@ func main() {
 				text := strings.Fields(m.Text)
 				// Если боту в личку - смотрим первое слово самого сообщения
 				log.Println(text)
-				if text[0] == "<@"+id+">" {
+				if len(text) > 1 && text[0] == "<@"+id+">" {
 					switch text[1] {
 					// Если запрос на квиз - уходим туда
 					case "-quiz":

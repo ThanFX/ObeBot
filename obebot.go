@@ -98,7 +98,8 @@ func main() {
 	for {
 		m, err = getMessage(ws)
 		if err != nil && err.Error() == "PANIC!" {
-			log.Printf("Произошла паника, перезапускаемся")
+			log.Printf("Произошла паника, выдерживаем паузу и перезапускаемся")
+			time.Sleep(time.Second * 30)
 			ws, id = slackConnect(keys.Slack)
 			m.Channel = BB_CHANNEL
 			m.Text = "Паника отловлена и обезврежена, сиськи спасены!"

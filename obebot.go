@@ -102,6 +102,7 @@ func main() {
 			time.Sleep(time.Second * 30)
 			ws, id = slackConnect(keys.Slack)
 			m.Channel = BB_CHANNEL
+			m.Type = "message"
 			m.Text = "Паника отловлена и обезврежена, сиськи спасены!"
 			postMessage(ws, m)
 		}

@@ -105,4 +105,9 @@ func postRedImage(ws *websocket.Conn, m Message, text []string) {
 	m.Text = link
 	m.Type = "message"
 	postMessage(ws, m)
+
+	//	if text[0] == "redhead" {
+	//		m.Text = "<@U5SSW8KLM> :point_up:"
+	//		postMessage(ws, m)
+	//	}
 }

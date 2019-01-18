@@ -91,7 +91,7 @@ func main() {
 	defer db.Close()
 
 	c := cron.New()
-	c.AddFunc("0 0-30/5 7 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
+	c.AddFunc("0 0-30/5 6 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
 	c.Start()
 
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -111,13 +111,15 @@ func main() {
 				log.Printf("Ошибка получения сообщения %s", err)
 			}
 		*/
-		/*
+		if m.Text != "" {
 			log.Printf("Id: %d, Type: %s, Channel: %s, User: %s, Text: %s, Time: %s",
 				m.Id, m.Type, m.Channel, m.User, m.Text, m.Ts)
+
 			if m.User != "" {
 				log.Println(getUserInfo(keys.Slack, m.User))
 			}
-		*/
+		}
+
 		// Парсим сообщение
 		if m.Type == "message" {
 			go func(m Message) {
@@ -160,11 +162,25 @@ func main() {
 					// Запрос эротической картинки по тэгу
 					case "-tag":
 						if m.Channel == BB_CHANNEL {
-							postRedImage(ws, m, text[2:])
+							if m.User == "U5S7DGWM7" {
+								m.Text = getImage("манекен%20женский", keys, 2)
+								postMessage(ws, m)
+								m.Text = "Нет спорта - нет сисек!!!"
+								postMessage(ws, m)
+							} else {
+								postRedImage(ws, m, text[2:])
+							}
 						}
 					// Поиск картинки по запросу
 					case "-img":
-						postImage(ws, m, text[1:])
+						if m.User == "U5S7DGWM7" {
+							m.Text = getImage("манекен%20женский", keys, 2)
+							postMessage(ws, m)
+							m.Text = "Нет спорта - нет сисек!!!"
+							postMessage(ws, m)
+						} else {
+							postImage(ws, m, text[1:])
+						}
 					// Иначе просто диалог с ботом
 					default:
 						PostDialogMessage(ws, m, text[1:])
@@ -173,7 +189,14 @@ func main() {
 					// Если это канал b&b - парсим сообщение
 					if m.Channel == BB_CHANNEL {
 						if strings.HasPrefix(m.Text, "!") {
-							postBB(ws, m)
+							if m.User == "U5S7DGWM7" {
+								m.Text = getImage("манекен%20женский", keys, 2)
+								postMessage(ws, m)
+								m.Text = "Нет спорта - нет сисек!!!"
+								postMessage(ws, m)
+							} else {
+								postBB(ws, m)
+							}
 						}
 					} else if isQuiz && isQuestion {
 						// Иначе смотрим, запущен ли квиз и загадан ли вопрос

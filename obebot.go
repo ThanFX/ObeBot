@@ -106,19 +106,6 @@ func main() {
 			m.Text = "Паника отловлена и обезврежена, сиськи спасены!"
 			postMessage(ws, m)
 		}
-		/*
-			if err != nil {
-				log.Printf("Ошибка получения сообщения %s", err)
-			}
-		*/
-		if m.Text != "" {
-			log.Printf("Id: %d, Type: %s, Channel: %s, User: %s, Text: %s, Time: %s",
-				m.Id, m.Type, m.Channel, m.User, m.Text, m.Ts)
-
-			if m.User != "" {
-				log.Println(getUserInfo(keys.Slack, m.User))
-			}
-		}
 
 		// Парсим сообщение
 		if m.Type == "message" {
@@ -162,25 +149,11 @@ func main() {
 					// Запрос эротической картинки по тэгу
 					case "-tag":
 						if m.Channel == BB_CHANNEL {
-							if m.User == "U5S7DGWM7" {
-								m.Text = getImage("манекен%20женский", keys, 2)
-								postMessage(ws, m)
-								m.Text = "Нет спорта - нет сисек!!!"
-								postMessage(ws, m)
-							} else {
-								postRedImage(ws, m, text[2:])
-							}
+							postRedImage(ws, m, text[2:])
 						}
 					// Поиск картинки по запросу
 					case "-img":
-						if m.User == "U5S7DGWM7" {
-							m.Text = getImage("манекен%20женский", keys, 2)
-							postMessage(ws, m)
-							m.Text = "Нет спорта - нет сисек!!!"
-							postMessage(ws, m)
-						} else {
-							postImage(ws, m, text[1:])
-						}
+						postImage(ws, m, text[1:])
 					// Иначе просто диалог с ботом
 					default:
 						PostDialogMessage(ws, m, text[1:])
@@ -189,14 +162,7 @@ func main() {
 					// Если это канал b&b - парсим сообщение
 					if m.Channel == BB_CHANNEL {
 						if strings.HasPrefix(m.Text, "!") {
-							if m.User == "U5S7DGWM7" {
-								m.Text = getImage("манекен%20женский", keys, 2)
-								postMessage(ws, m)
-								m.Text = "Нет спорта - нет сисек!!!"
-								postMessage(ws, m)
-							} else {
-								postBB(ws, m)
-							}
+							postBB(ws, m)
 						}
 					} else if isQuiz && isQuestion {
 						// Иначе смотрим, запущен ли квиз и загадан ли вопрос

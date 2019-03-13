@@ -22,7 +22,7 @@ type Photos struct {
 
 var baseUrl = "http://redbust.com/page/"
 var startPage = 1
-var finishPage = 492
+var finishPage = 572
 
 func savePost(post Photos) {
 	tx, err := db.Begin()

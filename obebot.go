@@ -23,9 +23,9 @@ const (
 	GOOGLE_SEARCH_MAX_PAGES     int    = 90
 	WIKI_SEARCH_URL             string = "https://ru.wikipedia.org/w/api.php?action=opensearch&prop=info&format=json&inprop=url"
 	BOOBS_SEARCH_URL            string = "http://api.oboobs.ru/boobs/"
-	BOOBS_MAX_SIZE              int    = 11240
+	BOOBS_MAX_SIZE              int    = 13646
 	BUTTS_SEARCH_URL            string = "http://api.obutts.ru/butts/"
-	BUTTS_MAX_SIZE              int    = 5230
+	BUTTS_MAX_SIZE              int    = 6385
 	FILE_QUIZ_NAME              string = "quiz.txt"
 	FILE_QUIZ_RESULT_NAME       string = "quiz_result.txt"
 	BB_CHANNEL                  string = "G7XBF35TM"

@@ -1,0 +1,111 @@
+func main() {
+	var (
+		isQuestion = false
+		isQuiz     = false
+	)
+	fmt.Println("Hello, I'm ObeBot!!")
+	bs, err := ioutil.ReadFile("prop.json")
+	if err != nil {
+		log.Fatalf("Ошибка открытия файла параметров %s", err)
+	}
+	err = json.Unmarshal(bs, &keys)
+	if err != nil {
+		log.Fatalf("Ошибка получения параметров из JSON %s", err)
+	}
+	ws, id := slackConnect(keys.Slack)
+	isQuiz = initQuiz()
+
+	db, err = sql.Open("sqlite3", "redbust.db")
+	if err != nil {
+		log.Printf("Ошибка открытия файла БД: %s", err)
+	}
+	defer db.Close()
+
+	c := cron.New()
+	c.AddFunc("0 0-30/5 12 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
+	c.Start()
+
+	rand.Seed(time.Now().UTC().UnixNano())
+	for {
+		m, err = getMessage(ws)
+		if r := recover(); r != nil {
+			log.Printf("Упавшее соединение поднято!!!")
+			ws, id = slackConnect(keys.Slack)
+		}
+		/*
+			if err != nil {
+				log.Printf("Ошибка получения сообщения %s", err)
+			}
+		*/
+		/*
+			log.Printf("Id: %d, Type: %s, Channel: %s, User: %s, Text: %s, Time: %s",
+				m.Id, m.Type, m.Channel, m.User, m.Text, m.Ts)
+			if m.User != "" {
+				log.Println(getUserInfo(keys.Slack, m.User))
+			}
+		*/
+		// Парсим сообщение
+		if m.Type == "message" {
+			go func(m Message) {
+				if m.Text == "" {
+					return
+				}
+				text := strings.Fields(m.Text)
+				// Если боту в личку - смотрим первое слово самого сообщения
+				log.Println(text)
+				if text[0] == "<@"+id+">" {
+					switch text[1] {
+					// Если запрос на квиз - уходим туда
+					case "!quiz":
+						// Если викторина не запущена - нафиг
+						if !isQuiz {
+							m.Text = "Какая, нафиг, викторина? Работать, блеать!"
+							postMessage(ws, m)
+						} else {
+							// Уходим постить вопрос (новый или повторять уже заданный)
+							isQuestion = postQuiz(ws, m, isQuestion)
+						}
+					// Если запрос результатов квиза - уходим в результаты
+					case "!result":
+						// Если викторина не запущена - нафиг
+						if !isQuiz {
+							m.Text = "Какие, нафиг, результаты викторины? Работать, блеать!"
+							postMessage(ws, m)
+						} else {
+							// Уходим постить результаты викторины
+							postQuizResult(ws, m)
+						}
+					// Если запрос следующего вопроса - пропускаем текущий
+					case "!next":
+						if isQuestion {
+							isQuestion = postQuiz(ws, m, false)
+						}
+					// Если запрос на добавление вопроса
+					case "!add":
+						log.Println(getChannelsList(keys.Slack))
+					// Если запрос на Вики - уходим искать там
+					case "!wiki":
+						postWiki(ws, m, text[2:])
+					// Иначе это просто запрос на картинки
+					case "!red":
+						if m.Channel == BB_CHANNEL {
+							postRedImage(ws, m, text[2:])
+						}
+					default:
+						postImage(ws, m, text[1:])
+					}
+				} else {
+					// Если это канал b&b - парсим сообщение
+					if m.Channel == BB_CHANNEL {
+						if strings.HasPrefix(m.Text, "!") {
+							postBB(ws, m)
+						}
+					} else if isQuiz && isQuestion {
+						// Иначе смотрим, запущен ли квиз и загадан ли вопрос
+						isQuestion = checkAnswer(ws, m)
+					}
+				}
+			}(m)
+		}
+	}
+}

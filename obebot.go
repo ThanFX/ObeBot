@@ -11,6 +11,7 @@ import (
 
 	"database/sql"
 
+	"github.com/gorilla/websocket"
 	"github.com/robfig/cron"
 )
 
@@ -67,6 +68,13 @@ var (
 	db   *sql.DB
 )
 
+func pingSlack(ws *websocket.Conn, m Message) {
+	m.Type = "ping"
+	m.Channel = ""
+	m.Text = "ping"
+	postMessage(ws, m)
+}
+
 func main() {
 	var (
 		isQuestion = false
@@ -91,7 +99,8 @@ func main() {
 	defer db.Close()
 
 	c := cron.New()
-	c.AddFunc("0 0-30/5 6 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
+	c.AddFunc("0 0-30/5 7 * * MON-FRI", func() { postRandImage(ws, keys.Channel) })
+	c.AddFunc("0 0/5 * * * *", func() { pingSlack(ws, m) })
 	c.Start()
 
 	rand.Seed(time.Now().UTC().UnixNano())

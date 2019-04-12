@@ -9,7 +9,7 @@ import (
 	"math/rand"
 )
 
-func getRandImage(postId int) string {
+func getRandImage(postId int) (string, string) {
 	max, err := db.Query("select count(*) from photos where post_id = ?", postId)
 	if err != nil {
 		log.Fatalf("Ошибка поиска количества фотографий по id в БД: %s", err)
@@ -20,7 +20,13 @@ func getRandImage(postId int) string {
 	if err != nil {
 		log.Fatalf("Ошибка поиска фотографий по id в БД: %s", err)
 	}
-	defer max.Close()
+	defer rows.Close()
+
+	tags, err := db.Query("select tag from tags where post_id = ?", postId)
+	if err != nil {
+		log.Fatalf("Ошибка поиска фотографий по id в БД: %s", err)
+	}
+	defer tags.Close()
 
 	var maxCount, randPhotoNum int
 	for max.Next() {
@@ -31,7 +37,7 @@ func getRandImage(postId int) string {
 		randPhotoNum = rand.Intn(maxCount)
 	}
 	i := 0
-	var url string
+	var url, s string
 	for rows.Next() {
 		err = rows.Scan(&url)
 		if err != nil {
@@ -42,12 +48,22 @@ func getRandImage(postId int) string {
 		}
 		i++
 	}
+
+	var tags_string []string
+	for tags.Next() {
+		err = tags.Scan(&s)
+		if err != nil {
+			log.Fatal("ошибка парсинга tag фотографий: ", err)
+		}
+		tags_string = append(tags_string, s)
+	}
+
 	err = rows.Err()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Выбрали фото №%d", randPhotoNum)
-	return url
+	return url, strings.Join(tags_string, ", ")
 }
 
 func getImageUrlByTag(tag string) string {
@@ -64,7 +80,7 @@ func getImageUrlByTag(tag string) string {
 		log.Fatalf("Ошибка поиска id постов по тегу в БД: %s", err)
 	}
 
-	defer max.Close()
+	defer rows.Close()
 
 	var maxCount, randPostNum int
 	for max.Next() {
@@ -95,7 +111,8 @@ func getImageUrlByTag(tag string) string {
 	}
 
 	log.Printf("Выбрали пост №%d", id)
-	return getRandImage(id)
+	url, tags := getRandImage(id)
+	return "Фото с тэгами " + tags + ": " + url
 }
 
 func postRedImage(ws *websocket.Conn, m Message, text []string) {

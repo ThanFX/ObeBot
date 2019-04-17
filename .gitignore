@@ -4,6 +4,7 @@ ObeBot*
 !obebot.go
 quiz_result.txt
 quiz1.txt
+yes*
 
 /.env
 .env

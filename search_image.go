@@ -8,8 +8,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
+)
+
+var (
+	lastAndyPostTime int64
+	countAndyPost    int
 )
 
 func getImage(q string, keys Keys, max int) string {
@@ -50,15 +56,34 @@ func postRandImage(ws *websocket.Conn, ch string) {
 }
 
 func postImage(ws *websocket.Conn, m Message, text []string) {
-	// Чем больше слов в запросе, тем меньший размер выборки (для повышения релевантности)
-	length := 10 - len(text)
-	if length < 1 {
-		length = 1
+	//Анти-Андрюха (защита от Андрюхиных DOS-атак картинками)
+	isAndy := false
+	if m.User == "U6LUSHR70" {
+		// Если между первым запросом от Андрюхи и текущим больше минуты - начинаем отсчёт заново
+		if time.Now().Unix()-lastAndyPostTime > 90 {
+			countAndyPost = 1
+			lastAndyPostTime = time.Now().Unix()
+			isAndy = true
+			// Если между запросами меньше минутами и меньше 3-х запросов - разрешаем фотки
+		} else if countAndyPost < 3 {
+			countAndyPost++
+			isAndy = true
+		}
 	}
-	// Преобразуем сообщение в поисковую строку, получим по запросу ссылку на картинку и запостим
-	qs := strings.Join(text, "%20")
-	link := getImage(qs, keys, length)
-	m.Text = link
+
+	if isAndy || m.User != "U6LUSHR70" {
+		// Чем больше слов в запросе, тем меньший размер выборки (для повышения релевантности)
+		length := 10 - len(text)
+		if length < 1 {
+			length = 1
+		}
+		// Преобразуем сообщение в поисковую строку, получим по запросу ссылку на картинку и запостим
+		qs := strings.Join(text, "%20")
+		link := getImage(qs, keys, length)
+		m.Text = link
+	} else {
+		m.Text = "Андрюха, работать надо, а не картинки разглядывать!!!"
+	}
 	m.Type = "message"
 	postMessage(ws, m)
 }
